@@ -11,3 +11,8 @@
 .env.dev
 .idea/workspace.xml
 .idea
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
