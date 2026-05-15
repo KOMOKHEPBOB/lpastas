@@ -5,7 +5,6 @@ namespace App\Service\Order;
 use App\DTO\CreateOrderRequest;
 use App\Exception\ProductDoesNotExistException;
 use App\Repository\ProductRepository;
-use function count;
 
 readonly class CreateOrderRequestValidator
 {
@@ -21,12 +20,29 @@ readonly class CreateOrderRequestValidator
      */
     public function validate(CreateOrderRequest $request): void
     {
-        $productsIds = $this->getUniqueProductIds($request);
-        $foundProductsCount = $this->productRepository->count(['id' => $productsIds]);
-
-        if (count($productsIds) !== $foundProductsCount) {
-            throw new ProductDoesNotExistException('One or more products do not exist');
+        $missingProductIds = $this->getMissingProductIds($request);
+        if (empty($missingProductIds)) {
+            return;
         }
+
+        throw new ProductDoesNotExistException(sprintf(
+            'Products do not exist: %s',
+            implode(', ', $missingProductIds)
+        ));
+    }
+
+    /**
+     * @param CreateOrderRequest $request
+     * @return int[]
+     */
+    private function getMissingProductIds(CreateOrderRequest $request): array
+    {
+        $requestedProductIds = $this->getUniqueProductIds($request);
+        $existingProductIds = $this->productRepository->findExistingIds($requestedProductIds);
+
+        return array_values(
+            array_diff($requestedProductIds, $existingProductIds)
+        );
     }
 
     /**

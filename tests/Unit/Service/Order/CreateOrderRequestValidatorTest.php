@@ -4,13 +4,13 @@ namespace App\Tests\Unit\Service\Order;
 
 use App\DTO\CreateOrderRequest;
 use App\DTO\OrderItemRequest;
+use App\Exception\ProductDoesNotExistException;
 use App\Repository\ProductRepository;
 use App\Service\Order\CreateOrderRequestValidator;
-use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use function count;
 
 #[Group('OrderApi')]
 class CreateOrderRequestValidatorTest extends TestCase
@@ -33,26 +33,78 @@ class CreateOrderRequestValidatorTest extends TestCase
     {
         $productIds = [5, 40];
         $createOrderRequest = $this->createOrderRequest($productIds);
-
-        $this->productRepositoryMock
-            ->expects($this->once())
-            ->method('count')
-            ->with(['id' => $productIds])
-            ->willReturn(count($productIds));
+        $this->mockExistingProductIds(
+            requestedProductIds: $productIds,
+            existingProductIds: $productIds
+        );
 
         $this->createOrderRequestValidator->validate($createOrderRequest);
     }
 
+    #[DataProvider('missingProductsProvider')]
+    public function testShouldThrowExceptionWithMissingProductIds(
+        array $requestedIds,
+        array $existingIds,
+        string $expectedMessage,
+    ): void {
+        $this->mockExistingProductIds($requestedIds, $existingIds);
+
+        $this->expectException(ProductDoesNotExistException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        $this->createOrderRequestValidator->validate(
+            $this->createOrderRequest($requestedIds)
+        );
+    }
+
+    public static function missingProductsProvider(): iterable
+    {
+        yield 'single missing product' => [
+            'requestedIds' => [5],
+            'existingIds' => [],
+            'expectedMessage' => 'Products do not exist: 5',
+        ];
+
+        yield 'first product missing' => [
+            'requestedIds' => [5, 40],
+            'existingIds' => [40],
+            'expectedMessage' => 'Products do not exist: 5',
+        ];
+
+        yield 'second product missing' => [
+            'requestedIds' => [5, 40],
+            'existingIds' => [5],
+            'expectedMessage' => 'Products do not exist: 40',
+        ];
+
+        yield 'two products missing' => [
+            'requestedIds' => [5, 40],
+            'existingIds' => [],
+            'expectedMessage' => 'Products do not exist: 5, 40',
+        ];
+    }
+
     private function createOrderRequest(array $productIds): CreateOrderRequest
     {
-        $orderItemRequests = [];
-        foreach ($productIds as $productId) {
-            $orderItemRequests[] = new OrderItemRequest(
-                $productId,
-                self::QUANTITY,
-            );
-        }
+        $orderItemsRequests = array_map(
+            static fn (int $id) => new OrderItemRequest($id, self::QUANTITY),
+            $productIds
+        );
 
-        return new CreateOrderRequest($orderItemRequests);
+        return new CreateOrderRequest($orderItemsRequests);
+    }
+
+    /**
+     * @param int[] $requestedProductIds
+     * @param int[] $existingProductIds
+     * @return void
+     */
+    private function mockExistingProductIds(array $requestedProductIds, array $existingProductIds): void
+    {
+        $this->productRepositoryMock
+            ->expects($this->once())
+            ->method('findExistingIds')
+            ->with($requestedProductIds)
+            ->willReturn($existingProductIds);
     }
 }

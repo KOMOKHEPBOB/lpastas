@@ -17,4 +17,21 @@ class ProductRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Product::class);
     }
+
+    /**
+     * @param int[] $requestedProductIds
+     * @return int[]
+     */
+    public function findExistingIds(array $requestedProductIds): array
+    {
+        $qb = $this->createQueryBuilder('p');
+        $qb
+            ->select('p.id')
+            ->where('p.id IN (:ids)')
+
+            ->setParameter('ids', $requestedProductIds)
+        ;
+
+        return $qb->getQuery()->getSingleColumnResult();
+    }
 }
