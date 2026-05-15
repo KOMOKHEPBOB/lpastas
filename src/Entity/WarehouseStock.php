@@ -29,7 +29,7 @@ class WarehouseStock
     private int $quantity;
 
     #[ORM\Column(type: 'integer')]
-    private int $quantityReserved;
+    private int $quantityReserved = 0;
 
     public function getId(): int
     {
