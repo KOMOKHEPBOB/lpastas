@@ -2,6 +2,6 @@
 
 namespace App\Exception;
 
-class DatabaseException extends ApiException
+class DatabaseException extends DomainException
 {
 }
