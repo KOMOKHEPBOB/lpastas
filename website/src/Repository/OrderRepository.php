@@ -20,13 +20,13 @@ class OrderRepository extends ServiceEntityRepository
         parent::__construct($registry, Order::class);
     }
 
-    public function findAndLock(Order $order): Order
+    public function findAndLock(int $orderId): Order
     {
         return $this->createQueryBuilder('o')
-            ->where('o.id = :order')
+            ->where('o.id = :orderId')
             ->setMaxResults(1)
 
-            ->setParameter('order', $order)
+            ->setParameter('orderId', $orderId)
 
             ->getQuery()
             ->setLockMode(LockMode::PESSIMISTIC_WRITE)

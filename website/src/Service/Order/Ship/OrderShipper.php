@@ -34,7 +34,7 @@ class OrderShipper
         $this->validate($order);
 
         $this->entityManager->wrapInTransaction(function () use ($order): void {
-            $this->orderRepository->findAndLock($order);
+            $this->orderRepository->findAndLock($order->getId());
 
             $reservations = $this->orderItemReservationRepository->findOrderReservations($order);
             $locationIds = array_map(static fn ($reservation) => $reservation->getWarehouseLocation()->getId(), $reservations);

@@ -18,6 +18,9 @@ framework:
                 options:
                     queue_name: reallocate_order
 
+                retry_strategy:
+                    max_retries: 300
+
         routing:
             App\Message\Cancel\RecalculateOrderAllocationMessage: reallocation
 
