@@ -6,6 +6,7 @@ namespace App\Controller\Order;
 
 use App\Entity\Order;
 use App\Exception\DomainException;
+use App\Exception\InternalException;
 use App\Service\Order\Cancel\OrderCanceler;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,11 +24,12 @@ class CancelOrderController extends AbstractController
      * @param Order $order
      * @return JsonResponse
      * @throws DomainException
+     * @throws InternalException
      */
     public function __invoke(Order $order): JsonResponse
     {
         $this->orderCanceler->cancelOrder($order);
 
-        return new JsonResponse(['success' => true, 'order_id' => $order->getId(), 'message' => 'Canceled']);
+        return new JsonResponse(['success' => true, 'order' => $order->getId(), 'message' => 'Canceled']);
     }
 }
