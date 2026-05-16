@@ -37,11 +37,26 @@ readonly class OrderAllocator
     {
         $this->validateOrder($order);
 
-        $quantityByProduct = [];
-        foreach ($order->getOrderItems() as $orderItem) {
-            $quantityByProduct[$orderItem->getProduct()->getId()] = $orderItem->getQuantityRequested();
-        }
+        $requestedQuantitiesPerProduct = $this->getRequestedQuantitiesPerProduct($order);
+        $lockedLocationsByWarehouse = $this->getLockedProductLocations($requestedQuantitiesPerProduct);
+        $allocationResult = $this->stockAllocator->allocate($lockedLocationsByWarehouse, $requestedQuantitiesPerProduct);
+        $this->persistOrderReservations($order, $allocationResult);
 
+        $missingItems = $allocationResult->getMissingPerProduct();
+        $this->updateOrderStatus($missingItems, $order);
+
+        $this->entityManager->flush();
+
+        return $missingItems;
+    }
+
+    /**
+     * @param array $quantityByProduct
+     * @return array<int, array<int, WarehouseLocation>>
+     * @throws DatabaseException
+     */
+    private function getLockedProductLocations(array $quantityByProduct): array
+    {
         try {
             $locationsByWarehouse = $this->lockedProductLocationsProvider->getLockedProductLocations(
                 array_keys($quantityByProduct)
@@ -53,25 +68,41 @@ readonly class OrderAllocator
             );
         }
 
-        $allocationResult = $this->stockAllocator->allocate($locationsByWarehouse, $quantityByProduct);
+        return $locationsByWarehouse;
+    }
 
+    /**
+     * @param Order $order
+     * @return array<int, int>
+     */
+    private function getRequestedQuantitiesPerProduct(Order $order): array
+    {
+        $requestedQuantityByPerProduct = [];
+        foreach ($order->getOrderItems() as $orderItem) {
+            $requestedQuantityByPerProduct[$orderItem->getProduct()->getId()] = $orderItem->getQuantityRequested();
+        }
+
+        return $requestedQuantityByPerProduct;
+    }
+
+    /**
+     * @param Order $order
+     * @param AllocationResultPo $allocationResult
+     * @return void
+     * @throws DatabaseException
+     */
+    private function persistOrderReservations(Order $order, AllocationResultPo $allocationResult): void
+    {
         try {
             foreach ($order->getOrderItems() as $orderItem) {
                 $this->persistReservationsForItem($orderItem, $allocationResult);
             }
-        } catch (OptimisticLockException | ORMException $e) {
+        } catch (OptimisticLockException|ORMException $e) {
             throw new DatabaseException(
                 message: 'Could not reserve stock: ' . $e->getMessage(),
                 previous: $e,
             );
         }
-
-        $missingItems = $allocationResult->getMissingPerProduct();
-        $this->updateOrderStatus($missingItems, $order);
-
-        $this->entityManager->flush();
-
-        return $missingItems;
     }
 
     /**
