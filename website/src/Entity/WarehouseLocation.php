@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Repository\WarehouseLocationRepository;
 use Doctrine\ORM\Mapping as ORM;
+use DomainException;
 
 #[ORM\Entity(repositoryClass: WarehouseLocationRepository::class)]
 #[ORM\Table(name: 'warehouse_locations')]
@@ -18,7 +19,7 @@ class WarehouseLocation
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\ManyToOne(targetEntity: Warehouse::class, inversedBy: 'locations')]
+    #[ORM\ManyToOne(targetEntity: Warehouse::class, inversedBy: 'warehouseLocations')]
     #[ORM\JoinColumn(nullable: false)]
     private Warehouse $warehouse;
 
@@ -26,11 +27,11 @@ class WarehouseLocation
     private int $warehouseId;
 
     #[ORM\ManyToOne(targetEntity: Product::class, inversedBy: 'warehouseLocations')]
-    #[ORM\JoinColumn(nullable: false)]
-    private Product $product;
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Product $product = null;
 
-    #[ORM\Column(name: 'product_id', type: 'integer', insertable: false, updatable: false)]
-    private int $productId;
+    #[ORM\Column(name: 'product_id', type: 'integer', nullable: true, insertable: false, updatable: false)]
+    private ?int $productId = null;
 
     #[ORM\Column(type: 'string', length: 16)]
     private string $locationCode;
@@ -66,12 +67,12 @@ class WarehouseLocation
         return $this->warehouseId;
     }
 
-    public function getProduct(): Product
+    public function getProduct(): ?Product
     {
         return $this->product;
     }
 
-    public function setProduct(Product $product): void
+    public function setProduct(?Product $product): void
     {
         $this->product = $product;
     }
@@ -121,7 +122,7 @@ class WarehouseLocation
         $available = $this->getQuantityAvailable();
 
         if ($amount > $available) {
-            throw new \DomainException(sprintf(
+            throw new DomainException(sprintf(
                 'Cannot reserve %d units at location "%s" in warehouse "%s": only %d available.',
                 $amount,
                 $this->getLocationCode(),
@@ -131,5 +132,25 @@ class WarehouseLocation
         }
 
         $this->setQuantityReserved($this->getQuantityReserved() + $amount);
+    }
+
+    public function consumeQuantityReserved(int $quantityToConsume): void
+    {
+        if ($this->getQuantityReserved() < $quantityToConsume) {
+            throw new DomainException(sprintf(
+                'Cannot consume %d reserved units at location "%s" in warehouse "%s": only %d available.',
+                $quantityToConsume,
+                $this->getLocationCode(),
+                $this->getWarehouse()->getTitle(),
+                $this->getQuantityReserved(),
+            ));
+        }
+
+        $this->setQuantityReserved($this->getQuantityReserved() - $quantityToConsume);
+        $this->setQuantity($this->getQuantity() - $quantityToConsume);
+
+        if (0 === $this->getQuantity()) {
+            $this->setProduct(null);
+        }
     }
 }

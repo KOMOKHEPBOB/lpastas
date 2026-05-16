@@ -27,7 +27,9 @@ class WarehouseLocationFixtures extends Fixture
 
                 for ($i = 0; $i < self::LOCATIONS_PER_PRODUCT; $i++) {
                     $warehouseLocation = new WarehouseLocation();
-                    $warehouseLocation->setProduct($this->getReference($productData['ref'], Product::class));
+                    if (0 !== $quantity) {
+                        $warehouseLocation->setProduct($this->getReference($productData['ref'], Product::class));
+                    }
                     $warehouseLocation->setWarehouse($this->getReference($warehouseData['ref'], Warehouse::class));
                     $warehouseLocation->setLocationCode('L' . $warehouseLocationCodes[$warehouseData['ref']]++);
                     $warehouseLocation->setQuantity($quantity++);

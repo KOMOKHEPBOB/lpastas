@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20260516091015 extends AbstractMigration
+final class Version20260516132224 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -24,7 +24,7 @@ final class Version20260516091015 extends AbstractMigration
         $this->addSql('CREATE TABLE order_items (id INT AUTO_INCREMENT NOT NULL, quantity_requested INT NOT NULL, order_id INT NOT NULL, product_id INT NOT NULL, INDEX IDX_62809DB08D9F6D38 (order_id), INDEX IDX_62809DB04584665A (product_id), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('CREATE TABLE orders (id INT AUTO_INCREMENT NOT NULL, status VARCHAR(255) NOT NULL, created_at DATETIME NOT NULL, updated_at DATETIME DEFAULT NULL, PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('CREATE TABLE products (id INT AUTO_INCREMENT NOT NULL, title VARCHAR(255) NOT NULL, PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
-        $this->addSql('CREATE TABLE warehouse_locations (id INT AUTO_INCREMENT NOT NULL, warehouse_id INT NOT NULL, product_id INT NOT NULL, location_code VARCHAR(16) NOT NULL, quantity INT NOT NULL, quantity_reserved INT NOT NULL, INDEX IDX_287304055080ECDE (warehouse_id), INDEX idx_product_id (product_id), UNIQUE INDEX uniq_warehouse_location_code (warehouse_id, location_code), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
+        $this->addSql('CREATE TABLE warehouse_locations (id INT AUTO_INCREMENT NOT NULL, warehouse_id INT NOT NULL, product_id INT DEFAULT NULL, location_code VARCHAR(16) NOT NULL, quantity INT NOT NULL, quantity_reserved INT NOT NULL, INDEX IDX_287304055080ECDE (warehouse_id), INDEX idx_product_id (product_id), UNIQUE INDEX uniq_warehouse_location_code (warehouse_id, location_code), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('CREATE TABLE warehouses (id INT AUTO_INCREMENT NOT NULL, title VARCHAR(255) NOT NULL, PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('ALTER TABLE order_item_reservations ADD CONSTRAINT FK_DB7415A3E415FB15 FOREIGN KEY (order_item_id) REFERENCES order_items (id)');
         $this->addSql('ALTER TABLE order_item_reservations ADD CONSTRAINT FK_DB7415A3F474C0FB FOREIGN KEY (warehouse_location_id) REFERENCES warehouse_locations (id)');
