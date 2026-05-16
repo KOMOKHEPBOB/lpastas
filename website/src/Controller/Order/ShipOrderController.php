@@ -12,7 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route(path: '/api/v1/orders/{order}/ship', name: 'api.v1.orders.ship', methods: ['PATCH'])]
+#[Route(path: '/api/v1/orders/{order}/shipment', name: 'api.v1.orders.ship', methods: ['PATCH'])]
 class ShipOrderController extends AbstractController
 {
     public function __construct(

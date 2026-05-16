@@ -50,6 +50,7 @@ class OrderCanceler
                 $locationId = $reservation->getWarehouseLocation()->getId();
 
                 $lockedLocations[$locationId]->releaseQuantityReserved($reservation->getQuantityReserved());
+                $this->entityManager->remove($reservation);
             }
 
             $order->setStatus(OrderStatus::Cancelled);

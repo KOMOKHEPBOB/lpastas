@@ -11,7 +11,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route(path: '/api/v1/orders/{order}/cancel', name: 'api.v1.orders.cancel', methods: ['PATCH'])]
+#[Route(path: '/api/v1/orders/{order}/cancelation', name: 'api.v1.orders.cancel', methods: ['PATCH'])]
 class CancelOrderController extends AbstractController
 {
     public function __construct(

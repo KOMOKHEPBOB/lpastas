@@ -1,0 +1,108 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: order-api
+meta:
+  id: wrk_bed77bf9213a471082c36ceb1ce41b0b
+  created: 1778839162749
+  modified: 1778839162749
+  description: ""
+collection:
+  - url: http://local.order-api.com/api/v1/orders
+    name: Create order
+    meta:
+      id: req_b7fcbe7b419b4d1f9841ebe6f9d5141a
+      created: 1778839185509
+      modified: 1778910870827
+      isPrivate: false
+      description: ""
+      sortKey: -1778839185509
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "orderItemRequests": [
+            {
+              "productId": 1,
+              "quantity": 2
+            },
+            {
+              "productId": 3,
+              "quantity": 30
+            }
+          ]
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: User-Agent
+        value: insomnia/12.5.0
+        description: ""
+        disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://local.order-api.com/api/v1/orders/5/shipment
+    name: Ship order
+    meta:
+      id: req_500e1ec2949b476fbd843adf100e4b53
+      created: 1778839394038
+      modified: 1778945036463
+      isPrivate: false
+      description: ""
+      sortKey: -1778486313552
+    method: PATCH
+    headers:
+      - name: User-Agent
+        value: insomnia/12.5.0
+        description: ""
+        disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://local.order-api.com/api/v1/orders/2/cancelation
+    name: Cancel order
+    meta:
+      id: req_e1cd2cb7c9814287b3cc1814004d061c
+      created: 1778839469560
+      modified: 1778945032149
+      isPrivate: false
+      description: ""
+      sortKey: -1778309877573.5
+    method: PATCH
+    headers:
+      - name: User-Agent
+        value: insomnia/12.5.0
+        description: ""
+        disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_04bd6ca6e08ab57456c306aae3e0ddfc19f8dcbe
+    created: 1778839162755
+    modified: 1778839162755
+environments:
+  name: Base Environment
+  meta:
+    id: env_04bd6ca6e08ab57456c306aae3e0ddfc19f8dcbe
+    created: 1778839162754
+    modified: 1778839162754
+    isPrivate: false

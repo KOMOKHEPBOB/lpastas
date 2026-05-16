@@ -44,7 +44,7 @@ readonly class OrderCreator
                 $orderItemRequest->quantity,
             );
             $order->addItem($orderItem);
-            $this->entityManager->persist($order);
+            $this->entityManager->persist($orderItem);
         }
 
         return $order;

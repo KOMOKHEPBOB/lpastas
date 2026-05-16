@@ -45,8 +45,6 @@ readonly class OrderAllocator
         $missingItems = $allocationResult->getMissingPerProduct();
         $this->updateOrderStatus($missingItems, $order);
 
-        $this->entityManager->flush();
-
         return $missingItems;
     }
 
