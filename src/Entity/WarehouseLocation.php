@@ -22,9 +22,15 @@ class WarehouseLocation
     #[ORM\JoinColumn(nullable: false)]
     private Warehouse $warehouse;
 
+    #[ORM\Column(name: 'warehouse_id', type: 'integer', insertable: false, updatable: false)]
+    private int $warehouseId;
+
     #[ORM\ManyToOne(targetEntity: Product::class, inversedBy: 'warehouseLocations')]
     #[ORM\JoinColumn(nullable: false)]
     private Product $product;
+
+    #[ORM\Column(name: 'product_id', type: 'integer', insertable: false, updatable: false)]
+    private int $productId;
 
     #[ORM\Column(type: 'string', length: 16)]
     private string $locationCode;
@@ -34,6 +40,11 @@ class WarehouseLocation
 
     #[ORM\Column(type: 'integer')]
     private int $quantityReserved = 0;
+
+    public function setId(int $id): void
+    {
+        $this->id = $id;
+    }
 
     public function getId(): ?int
     {
@@ -50,6 +61,11 @@ class WarehouseLocation
         $this->warehouse = $warehouse;
     }
 
+    public function getWarehouseId(): int
+    {
+        return $this->warehouseId;
+    }
+
     public function getProduct(): Product
     {
         return $this->product;
@@ -58,6 +74,11 @@ class WarehouseLocation
     public function setProduct(Product $product): void
     {
         $this->product = $product;
+    }
+
+    public function getProductId(): int
+    {
+        return $this->productId;
     }
 
     public function getLocationCode(): string
@@ -93,5 +114,22 @@ class WarehouseLocation
     public function getQuantityAvailable(): int
     {
         return max(0, $this->getQuantity() - $this->getQuantityReserved());
+    }
+
+    public function reserve(int $amount): void
+    {
+        $available = $this->getQuantityAvailable();
+
+        if ($amount > $available) {
+            throw new \DomainException(sprintf(
+                'Cannot reserve %d units at location "%s" in warehouse "%s": only %d available.',
+                $amount,
+                $this->getLocationCode(),
+                $this->getWarehouse()->getTitle(),
+                $available,
+            ));
+        }
+
+        $this->setQuantityReserved($this->getQuantityReserved() + $amount);
     }
 }

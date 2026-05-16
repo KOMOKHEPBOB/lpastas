@@ -10,7 +10,7 @@ use Doctrine\Persistence\ObjectManager;
 
 class ProductFixtures extends Fixture
 {
-    public const DATA = [
+    public const array DATA = [
         ['title' => 'P1', 'ref' => 'p1'],
         ['title' => 'P2', 'ref' => 'p2'],
         ['title' => 'P3', 'ref' => 'p3'],

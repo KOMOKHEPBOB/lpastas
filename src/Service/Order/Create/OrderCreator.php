@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Order;
+namespace App\Service\Order\Create;
 
 use App\DTO\CreateOrderRequest;
 use App\Entity\Order;
@@ -18,7 +18,6 @@ use Doctrine\ORM\Query\QueryException;
 readonly class OrderCreator
 {
     public function __construct(
-        private CreateOrderRequestValidator $createOrderRequestValidator,
         private EntityManagerInterface $entityManager,
         private OrderFactory $orderFactory,
         private OrderItemFactory $orderItemFactory,
@@ -31,9 +30,8 @@ readonly class OrderCreator
      * @return Order
      * @throws ApiException
      */
-    public function createAndSaveOrder(CreateOrderRequest $createOrderRequest): Order
+    public function createAndPersistOrder(CreateOrderRequest $createOrderRequest): Order
     {
-        $this->createOrderRequestValidator->validate($createOrderRequest);
         $productsPerId = $this->getProductsPerId($createOrderRequest);
 
         $order = $this->orderFactory->createOrder();
@@ -48,8 +46,6 @@ readonly class OrderCreator
             $order->addItem($orderItem);
             $this->entityManager->persist($order);
         }
-
-        $this->entityManager->flush();
 
         return $order;
     }

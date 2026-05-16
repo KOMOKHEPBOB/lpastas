@@ -10,7 +10,7 @@ use Doctrine\Persistence\ObjectManager;
 
 class WarehouseFixtures extends Fixture
 {
-    public const DATA = [
+    public const array DATA = [
         ['title' => 'Vilnius', 'ref' => 'w1'],
         ['title' => 'Kaunas', 'ref' => 'w2'],
         ['title' => 'Klaipėda', 'ref' => 'w3'],

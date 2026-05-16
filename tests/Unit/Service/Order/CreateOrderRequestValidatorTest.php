@@ -8,7 +8,7 @@ use App\DTO\CreateOrderRequest;
 use App\DTO\OrderItemRequest;
 use App\Exception\ProductDoesNotExistException;
 use App\Repository\ProductRepository;
-use App\Service\Order\CreateOrderRequestValidator;
+use App\Service\Order\Create\CreateOrderRequestValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -59,30 +59,32 @@ class CreateOrderRequestValidatorTest extends TestCase
         );
     }
 
-    public static function missingProductsProvider(): iterable
+    public static function missingProductsProvider(): array
     {
-        yield 'single missing product' => [
-            'requestedIds' => [5],
-            'existingIds' => [],
-            'expectedMessage' => 'Products do not exist: 5',
-        ];
+        return [
+            'Single missing product' => [
+                'requestedIds' => [5],
+                'existingIds' => [],
+                'expectedMessage' => 'Products do not exist: 5',
+            ],
 
-        yield 'first product missing' => [
-            'requestedIds' => [5, 40],
-            'existingIds' => [40],
-            'expectedMessage' => 'Products do not exist: 5',
-        ];
+            'First product missing' => [
+                'requestedIds' => [5, 40],
+                'existingIds' => [40],
+                'expectedMessage' => 'Products do not exist: 5',
+            ],
 
-        yield 'second product missing' => [
-            'requestedIds' => [5, 40],
-            'existingIds' => [5],
-            'expectedMessage' => 'Products do not exist: 40',
-        ];
+            'Second product missing' => [
+                'requestedIds' => [5, 40],
+                'existingIds' => [5],
+                'expectedMessage' => 'Products do not exist: 40',
+            ],
 
-        yield 'two products missing' => [
-            'requestedIds' => [5, 40],
-            'existingIds' => [],
-            'expectedMessage' => 'Products do not exist: 5, 40',
+            'Two products missing' => [
+                'requestedIds' => [5, 40],
+                'existingIds' => [],
+                'expectedMessage' => 'Products do not exist: 5, 40',
+            ],
         ];
     }
 

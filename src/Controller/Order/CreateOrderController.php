@@ -6,7 +6,7 @@ namespace App\Controller\Order;
 
 use App\DTO\CreateOrderRequest;
 use App\Exception\ApiException;
-use App\Service\Order\OrderCreator;
+use App\Service\Order\Create\CreateOrderRequestHandler;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class CreateOrderController extends AbstractController
 {
     public function __construct(
-        private readonly OrderCreator $orderCreator,
+        private readonly CreateOrderRequestHandler $createOrderRequestHandler,
     ) {
     }
 
@@ -29,10 +29,14 @@ class CreateOrderController extends AbstractController
     public function __invoke(
         #[MapRequestPayload] CreateOrderRequest $createOrderRequest,
     ): JsonResponse {
-        $order = $this->orderCreator->createAndSaveOrder($createOrderRequest);
+        $result = $this->createOrderRequestHandler->handleCreateOrderRequest($createOrderRequest);
 
         return new JsonResponse(
-            ['success' => true, 'order_id' => $order->getId()],
+            [
+                'success' => true,
+                'order' => $result['order']->getId(),
+                'missing_items' => $result['missingItems'],
+            ],
             Response::HTTP_OK
         );
     }

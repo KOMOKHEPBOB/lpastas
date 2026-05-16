@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Order;
+namespace App\Service\Order\Create;
 
 use App\DTO\CreateOrderRequest;
 use App\Exception\ProductDoesNotExistException;
