@@ -6,27 +6,31 @@ namespace App\Service\Order\Allocate;
 
 use App\Entity\Order;
 use App\Enum\OrderStatus;
+use App\Exception\DomainException;
 use App\Repository\OrderItemReservationRepository;
 use App\Repository\WarehouseLocationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\QueryException;
 
-class OrderUnAllocator
+readonly class OrderUnAllocator
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly OrderItemReservationRepository $orderItemReservationRepository,
-        private readonly WarehouseLocationRepository $warehouseLocationRepository,
+        private EntityManagerInterface $entityManager,
+        private OrderItemReservationRepository $orderItemReservationRepository,
+        private WarehouseLocationRepository $warehouseLocationRepository,
     ) {
     }
 
     /**
      * @param Order $order
      * @return void
+     * @throws DomainException
      * @throws QueryException
      */
     public function unAllocateOrder(Order $order): void
     {
+        $this->validateOrder($order);
+
         $reservations = $this->orderItemReservationRepository->findOrderReservations($order);
         $locationIds = array_map(static fn ($reservation) => $reservation->getWarehouseLocation()->getId(), $reservations);
         $lockedLocations = $this->warehouseLocationRepository->findAndLock($locationIds);
@@ -38,5 +42,21 @@ class OrderUnAllocator
         }
 
         $order->setStatus(OrderStatus::Pending);
+    }
+
+    /**
+     * @param Order $order
+     * @return void
+     * @throws DomainException
+     */
+    private function validateOrder(Order $order): void
+    {
+        if (!in_array($order->getStatus(), [OrderStatus::Reserved, OrderStatus::PartiallyReserved], true)) {
+            throw new DomainException(sprintf(
+                'Trying to allocate order #%d with invalid status %s',
+                $order->getId(),
+                $order->getStatus()->name,
+            ));
+        }
     }
 }

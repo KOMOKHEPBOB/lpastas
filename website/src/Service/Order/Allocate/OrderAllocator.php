@@ -150,14 +150,14 @@ readonly class OrderAllocator
      */
     private function validateOrder(Order $order): void
     {
-        if (!in_array($order->getStatus(), [OrderStatus::Pending, OrderStatus::PartiallyReserved], true)) {
-            throw new DomainException(
-                sprintf(
-                    'Trying to allocate order #%d with invalid status %s',
-                    $order->getId(),
-                    $order->getStatus()->name,
-                )
-            );
+        if ($order->getStatus() === OrderStatus::Pending) {
+            return;
         }
+
+        throw new DomainException(sprintf(
+            'Trying to allocate order #%d with invalid status %s',
+            $order->getId(),
+            $order->getStatus()->name,
+        ));
     }
 }
