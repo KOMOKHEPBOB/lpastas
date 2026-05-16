@@ -7,7 +7,7 @@ namespace App\Enum;
 enum AllocationStrategy: string
 {
     /**
-     * If running low on free stock, we may want to prioritize emptying locations over less WHs
+     * If running low on free locations, we may want to prioritize emptying locations over less WHs
      */
     case EmptyLocationsFirst = 'empty_locations_first';
 

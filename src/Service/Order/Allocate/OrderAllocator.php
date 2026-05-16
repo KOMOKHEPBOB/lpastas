@@ -67,9 +67,7 @@ readonly class OrderAllocator
         }
 
         $missingItems = $allocationResult->getMissingPerProduct();
-        if (!empty($missingItems)) {
-            $order->setStatus(OrderStatus::PartiallyReserved);
-        }
+        $this->updateOrderStatus($missingItems, $order);
 
         $this->entityManager->flush();
 
@@ -103,6 +101,17 @@ readonly class OrderAllocator
             $orderItem->addReservation($reservation);
             $this->entityManager->persist($reservation);
         }
+    }
+
+    private function updateOrderStatus(array $missingItems, Order $order): void
+    {
+        if (!empty($missingItems)) {
+            $order->setStatus(OrderStatus::PartiallyReserved);
+
+            return;
+        }
+
+        $order->setStatus(OrderStatus::Reserved);
     }
 
     /**
