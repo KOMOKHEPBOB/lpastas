@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query\QueryException;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -24,8 +25,7 @@ class ProductRepository extends ServiceEntityRepository
      */
     public function findExistingIds(array $requestedProductIds): array
     {
-        $qb = $this->createQueryBuilder('p');
-        $qb
+        $qb = $this->createQueryBuilder('p')
             ->select('p.id')
             ->where('p.id IN (:ids)')
 
@@ -33,5 +33,22 @@ class ProductRepository extends ServiceEntityRepository
         ;
 
         return $qb->getQuery()->getSingleColumnResult();
+    }
+
+    /**
+     * @param int[] $ids
+     * @return Product[]
+     * @throws QueryException
+     */
+    public function findPerProductId(array $ids): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->where('p.id IN (:ids)')
+            ->indexBy('p', 'p.id')
+
+            ->setParameter('ids', $ids)
+        ;
+
+        return $qb->getQuery()->getResult();
     }
 }
