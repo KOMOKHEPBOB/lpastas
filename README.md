@@ -22,7 +22,8 @@ su -s /bin/bash www-data
 ```
 bin/console doctrine:schema:drop --force \
     && bin/console doctrine:schema:update --force \
-    && bin/console doctrine:fixtures:load -n
+    && bin/console doctrine:fixtures:load -n \
+    && bin/console messenger:setup-transports
 ```
 
 #### optional - install phpMyAdmin
