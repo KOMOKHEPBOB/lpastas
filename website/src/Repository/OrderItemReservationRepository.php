@@ -27,9 +27,10 @@ class OrderItemReservationRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('r');
         $qb
-            ->select('r, wl')
+            ->select('r, wl, p')
             ->innerJoin('r.warehouseLocation', 'wl')
             ->innerJoin('r.orderItem', 'oi')
+            ->innerJoin('wl.product', 'p')
             ->andWhere('oi.order = :order')
 
             ->setParameter('order', $order);

@@ -153,4 +153,19 @@ class WarehouseLocation
             $this->setProduct(null);
         }
     }
+
+    public function releaseQuantityReserved(int $quantityToRelease): void
+    {
+        if ($this->getQuantityReserved() < $quantityToRelease) {
+            throw new DomainException(sprintf(
+                'Cannot release %d reserved units at location "%s" in warehouse "%s": only %d available.',
+                $quantityToRelease,
+                $this->getLocationCode(),
+                $this->getWarehouse()->getTitle(),
+                $this->getQuantityReserved(),
+            ));
+        }
+
+        $this->setQuantityReserved($this->getQuantityReserved() - $quantityToRelease);
+    }
 }
