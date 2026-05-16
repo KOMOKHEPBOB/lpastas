@@ -23,11 +23,11 @@ class Product
 
     /** @var Collection<int, WarehouseLocation> */
     #[ORM\OneToMany(targetEntity: WarehouseLocation::class, mappedBy: 'product', cascade: ['persist', 'remove'])]
-    private Collection $warehouseStocks;
+    private Collection $warehouseLocations;
 
     public function __construct()
     {
-        $this->warehouseStocks = new ArrayCollection();
+        $this->warehouseLocations = new ArrayCollection();
     }
 
     public function getId(): int
@@ -51,13 +51,13 @@ class Product
     }
 
     /** @return Collection<int, WarehouseLocation> */
-    public function getWarehouseStocks(): Collection
+    public function getWarehouseLocations(): Collection
     {
-        return $this->warehouseStocks;
+        return $this->warehouseLocations;
     }
 
-    public function setWarehouseStocks(Collection $warehouseStocks): void
+    public function setWarehouseLocations(Collection $warehouseLocations): void
     {
-        $this->warehouseStocks = $warehouseStocks;
+        $this->warehouseLocations = $warehouseLocations;
     }
 }
