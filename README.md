@@ -19,9 +19,6 @@ A REST API built with **Symfony 8 / PHP 8.4 / MySQL / Doctrine ORM** that simula
 127.0.0.1 local.order-api.com
 ```
 
-
-# Project setup
-
 #### Clone the repository and build docker containers
 ```shell
 git clone https://github.com/KOMOKHEPBOB/lpastas.git \
@@ -30,14 +27,15 @@ git clone https://github.com/KOMOKHEPBOB/lpastas.git \
     && docker container exec -it o_php /bin/bash
 ```
 
-#### Switch to www-data user
+#### [docker] Switch to www-data user
 ```
 su -s /bin/bash www-data
 ```
 
-#### Prepare database
+#### [docker] Set up the project
 ```
-bin/console doctrine:schema:drop --force \
+composer install \
+    && bin/console doctrine:schema:drop --force \
     && bin/console doctrine:schema:update --force \
     && bin/console doctrine:fixtures:load -n \
     && bin/console messenger:setup-transports
@@ -48,19 +46,21 @@ bin/console doctrine:schema:drop --force \
 docker run --name o_phpmyadmin -d -p 8080:80 --link o_db:db --network lpastas_jan_naruskevic_o_network -e PMA_HOST=db -e PMA_PORT=3306 -e PMA_USER=root -e PMA_PASSWORD=root phpmyadmin/phpmyadmin
 ```
 
-# Run tests
+## Run tests
 
-#### Prepare test database
+#### [docker] Prepare test database
 ```
 bin/console doctrine:database:create --env=test \
     && bin/console doctrine:schema:drop --env=test --force \
     && bin/console doctrine:schema:update --env=test --force
 ```
 
+#### [docker] Run all tests
 ```
 bin/phpunit --testdox --testsuite=All --group=OrderApi
 ```
 
+---
 ---
 
 ## Table of Contents
@@ -82,7 +82,7 @@ bin/phpunit --testdox --testsuite=All --group=OrderApi
 
 The system manages product stock across a network of warehouses. Each warehouse contains multiple **physical locations** (bins, shelves, aisles). A single product can occupy multiple locations within the same warehouse.
 
-When an order is placed, the system attempts to reserve the requested quantities using the **fewest possible warehouses**. If stock is insufficient, the order is marked as partially reserved. Cancellations release reserved stock and trigger asynchronous reallocation for other affected orders.
+When an order is placed, the system attempts to reserve the requested quantities using the default **fewest possible warehouses** strategy. If stock is insufficient, the order is marked as partially reserved. Cancellations release reserved stock and trigger asynchronous reallocation for other affected orders.
 
 ### Order Lifecycle
 
@@ -237,10 +237,44 @@ Creates an order and reserves stock.
   "missing_items": { "1": 10 }
 }
 ```
+**[docker] Create fully reserved order** 
+```
+curl -X POST http://o_nginx/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderItemRequests": [
+      { "productId": 1, "quantity": 10 },
+      { "productId": 2, "quantity": 5 }
+    ]
+  }'
+```
+
+**[docker] Create partially reserved order**
+```
+curl -X POST http://o_nginx/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderItemRequests": [
+      { "productId": 1, "quantity": 10 },
+      { "productId": 3, "quantity": 500 }
+    ]
+  }'
+```
+
+**[docker] Non-existing item**
+```
+curl -X POST http://o_nginx/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderItemRequests": [
+      { "productId": 100, "quantity": 1 }
+    ]
+  }'
+```
 
 ---
 
-### `PATCH /api/v1/orders/{order}/ship`
+### `PATCH /api/v1/orders/{order}/shipment`
 
 Ships a fully-reserved order. Decrements both `quantity` and `quantity_reserved` on each warehouse location.
 
@@ -248,14 +282,24 @@ Ships a fully-reserved order. Decrements both `quantity` and `quantity_reserved`
 { "success": true, "order": 42, "message": "Shipped" }
 ```
 
+**[docker] Ship order**
+```
+curl -X PATCH http://o_nginx/api/v1/orders/1/shipment
+```
+
 ---
 
-### `PATCH /api/v1/orders/{order}/cancel`
+### `PATCH /api/v1/orders/{order}/cancelation`
 
 Cancels a reserved or partially-reserved order. Releases `quantity_reserved` on affected locations and asynchronously triggers reallocation for orders containing the same products.
 
 ```json
 { "success": true, "order": 42, "message": "Canceled" }
+```
+
+**[docker] Cancel order**
+```
+curl -X PATCH http://o_nginx/api/v1/orders/2/cancelation
 ```
 
 ---
@@ -313,11 +357,11 @@ The loop terminates when either all products are satisfied or no remaining wareh
 
 All allocation, shipping, and cancellation run inside explicit database transactions with row-level locks acquired before any reads used for decision-making.
 
-**Lock acquisition order** — always `warehouse_id ASC, product_id ASC` — ensures concurrent transactions touching overlapping products lock rows in the same sequence, preventing circular waits (deadlocks).
+**Lock acquisition order** — always `product_id ASC` — ensures concurrent transactions touching overlapping products lock rows in the same sequence, preventing circular waits (deadlocks).
 
 **Two-step locking in `LockedProductLocationsProvider`:**
 
-1. `findProductIdsInStock` — identifies eligible location IDs sorted by the deterministic lock order (no lock; MySQL rejects `GROUP BY`/`HAVING` inside `FOR UPDATE`)
+1. `findProductIdsInStock` — findProductIdsInStock — identifies eligible location IDs and orders them for the allocator's grouping structure (`warehouse_id ASC, product_id ASC, available DESC`)
 2. `findAndLock` — re-fetches the same IDs with `SELECT ... FOR UPDATE` using `ORDER BY id ASC`
 
 **Order-level locking** — `OrderRepository::findAndLock` acquires a lock on the order row before ship or cancel modifies it, preventing two concurrent requests (e.g. simultaneous ship and cancel) from both passing status validation.
@@ -348,7 +392,7 @@ Running recalculation synchronously inside the cancel transaction would hold loc
 ### Message flow
 
 ```
-PATCH /orders/{id}/cancel
+PATCH /orders/{id}/cancelation
         │
         ▼
   OrderCanceler

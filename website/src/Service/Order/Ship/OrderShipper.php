@@ -57,7 +57,7 @@ class OrderShipper
      */
     private function validate(Order $order): void
     {
-        if (in_array($order->getStatus(), [OrderStatus::Reserved, OrderStatus::PartiallyReserved], true)) {
+        if ($order->getStatus() !== OrderStatus::Reserved) {
             return;
         }
 
