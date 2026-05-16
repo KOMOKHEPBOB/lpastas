@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Repository\OrderReservationRepository;
+use App\Repository\OrderItemReservationRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: OrderReservationRepository::class)]
-#[ORM\Table(name: 'order_reservations')]
+#[ORM\Entity(repositoryClass: OrderItemReservationRepository::class)]
+#[ORM\Table(name: 'order_item_reservations')]
 class OrderItemReservation
 {
     #[ORM\Id]
@@ -16,13 +16,13 @@ class OrderItemReservation
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\ManyToOne(targetEntity: Order::class, inversedBy: 'reservations')]
+    #[ORM\ManyToOne(targetEntity: OrderItem::class, inversedBy: 'reservations')]
     #[ORM\JoinColumn(nullable: false)]
     private OrderItem $orderItem;
 
-    #[ORM\ManyToOne(targetEntity: WarehouseStock::class)]
+    #[ORM\ManyToOne(targetEntity: WarehouseLocation::class)]
     #[ORM\JoinColumn(nullable: false)]
-    private WarehouseStock $warehouseStock;
+    private WarehouseLocation $warehouseLocation;
 
     #[ORM\Column(type: 'integer')]
     private int $quantityReserved;
@@ -42,14 +42,14 @@ class OrderItemReservation
         $this->orderItem = $orderItem;
     }
 
-    public function getWarehouseStock(): WarehouseStock
+    public function getWarehouseLocation(): WarehouseLocation
     {
-        return $this->warehouseStock;
+        return $this->warehouseLocation;
     }
 
-    public function setWarehouseStock(WarehouseStock $warehouseStock): void
+    public function setWarehouseLocation(WarehouseLocation $warehouseLocation): void
     {
-        $this->warehouseStock = $warehouseStock;
+        $this->warehouseLocation = $warehouseLocation;
     }
 
     public function getQuantityReserved(): int

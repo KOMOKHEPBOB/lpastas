@@ -18,7 +18,7 @@ class OrderItem
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\ManyToOne(targetEntity: Order::class, inversedBy: 'items')]
+    #[ORM\ManyToOne(targetEntity: Order::class, inversedBy: 'orderItems')]
     #[ORM\JoinColumn(nullable: false)]
     private Order $order;
 
@@ -30,10 +30,15 @@ class OrderItem
     private int $quantityRequested;
 
     /** @var Collection<int, OrderItemReservation> */
-    #[ORM\OneToMany(targetEntity: OrderItemReservation::class, mappedBy: 'order', cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(
+        targetEntity: OrderItemReservation::class,
+        mappedBy: 'orderItem',
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true,
+    )]
     private Collection $reservations;
 
-    public function __call(string $name, array $arguments)
+    public function __construct()
     {
         $this->reservations = new ArrayCollection();
     }
@@ -82,5 +87,10 @@ class OrderItem
     public function addReservation(OrderItemReservation $reservation): void
     {
         $this->reservations->add($reservation);
+    }
+
+    public function clearReservations(): void
+    {
+        $this->reservations->clear();
     }
 }

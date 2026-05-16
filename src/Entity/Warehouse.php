@@ -21,8 +21,8 @@ class Warehouse
     #[ORM\Column(type: 'string', length: 255)]
     private string $title;
 
-    /** @var Collection<int, WarehouseStock> */
-    #[ORM\OneToMany(targetEntity: WarehouseStock::class, mappedBy: 'warehouse', cascade: ['persist', 'remove'])]
+    /** @var Collection<int, WarehouseLocation> */
+    #[ORM\OneToMany(targetEntity: WarehouseLocation::class, mappedBy: 'warehouse', cascade: ['persist', 'remove'])]
     private Collection $stocks;
 
     public function __construct()
@@ -45,7 +45,7 @@ class Warehouse
         $this->title = $title;
     }
 
-    /** @return Collection<int, WarehouseStock> */
+    /** @return Collection<int, WarehouseLocation> */
     public function getStocks(): Collection
     {
         return $this->stocks;

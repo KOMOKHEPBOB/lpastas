@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\WarehouseStock;
+use App\Entity\WarehouseLocation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<WarehouseStock>
+ * @extends ServiceEntityRepository<WarehouseLocation>
  */
-class WarehouseStockRepository extends ServiceEntityRepository
+class WarehouseLocationRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, WarehouseStock::class);
+        parent::__construct($registry, WarehouseLocation::class);
     }
 }

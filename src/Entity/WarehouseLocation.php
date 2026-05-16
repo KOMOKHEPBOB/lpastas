@@ -4,26 +4,30 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Repository\WarehouseStockRepository;
+use App\Repository\WarehouseLocationRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: WarehouseStockRepository::class)]
-#[ORM\Table(name: 'warehouse_stocks')]
-#[ORM\UniqueConstraint(name: 'uniq_warehouse_product', columns: ['warehouse_id', 'product_id'])]
-class WarehouseStock
+#[ORM\Entity(repositoryClass: WarehouseLocationRepository::class)]
+#[ORM\Table(name: 'warehouse_locations')]
+#[ORM\UniqueConstraint(name: 'uniq_warehouse_location_code', columns: ['warehouse_id', 'location_code'])]
+#[ORM\Index(name: 'idx_product_id', columns: ['product_id'])]
+class WarehouseLocation
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\ManyToOne(targetEntity: Warehouse::class, inversedBy: 'stocks')]
+    #[ORM\ManyToOne(targetEntity: Warehouse::class, inversedBy: 'locations')]
     #[ORM\JoinColumn(nullable: false)]
     private Warehouse $warehouse;
 
-    #[ORM\ManyToOne(targetEntity: Product::class, inversedBy: 'warehouseStocks')]
+    #[ORM\ManyToOne(targetEntity: Product::class, inversedBy: 'warehouseLocations')]
     #[ORM\JoinColumn(nullable: false)]
     private Product $product;
+
+    #[ORM\Column(type: 'string', length: 16)]
+    private string $locationCode;
 
     #[ORM\Column(type: 'integer')]
     private int $quantity;
@@ -31,7 +35,7 @@ class WarehouseStock
     #[ORM\Column(type: 'integer')]
     private int $quantityReserved = 0;
 
-    public function getId(): int
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -54,6 +58,16 @@ class WarehouseStock
     public function setProduct(Product $product): void
     {
         $this->product = $product;
+    }
+
+    public function getLocationCode(): string
+    {
+        return $this->locationCode;
+    }
+
+    public function setLocationCode(string $locationCode): void
+    {
+        $this->locationCode = $locationCode;
     }
 
     public function getQuantity(): int
