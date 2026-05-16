@@ -61,10 +61,10 @@ class OrderShipper
             return;
         }
 
-        throw new DomainException(
-            'Trying to ship order #%d with invalid status %d',
+        throw new DomainException(sprintf(
+            'Trying to ship order #%d with invalid status %s',
             $order->getId(),
-            $order->getStatus()->value
-        );
+            $order->getStatus()->name
+        ));
     }
 }

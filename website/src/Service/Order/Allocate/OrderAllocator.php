@@ -157,7 +157,7 @@ readonly class OrderAllocator
                 sprintf(
                     'Trying to allocate order #%d with invalid status %s',
                     $order->getId(),
-                    $order->getStatus()->value,
+                    $order->getStatus()->name,
                 )
             );
         }
