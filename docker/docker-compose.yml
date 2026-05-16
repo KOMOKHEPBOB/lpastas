@@ -1,0 +1,38 @@
+services:
+  php-fpm:
+    build: php
+    container_name: o_php
+    volumes:
+      - ../website/:/var/www/order-api.com
+    working_dir: /var/www/order-api.com
+    depends_on:
+      - db
+    networks:
+      - o_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: o_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../website/:/var/www/order-api.com
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php-fpm
+    networks:
+      - o_network
+
+  db:
+    image: mysql:8.0
+    container_name: o_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: order_api
+    ports:
+      - "3306:3306"
+    networks:
+      - o_network
+
+networks:
+  o_network:
