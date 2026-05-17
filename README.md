@@ -36,7 +36,7 @@ su -s /bin/bash www-data
 ```
 composer install \
     && bin/console doctrine:schema:drop --force \
-    && bin/console doctrine:schema:update --force \
+    && bin/console doctrine:migrations:migrate -n \
     && bin/console doctrine:fixtures:load -n \
     && bin/console messenger:setup-transports
 ```
@@ -153,7 +153,6 @@ src/
 │   └── WarehouseLocation.php           # Rich entity: reserve / releaseQuantityReserved / consumeQuantityReserved
 │
 ├── Enum/
-│   ├── AllocationStrategy.php          # fewest_warehouses | empty_locations_first
 │   └── OrderStatus.php                 # pending | reserved | partially_reserved | shipped | cancelled
 │
 ├── Exception/
@@ -185,6 +184,10 @@ src/
     │   ├── LockedProductLocationsProvider.php  # Two-step lock: find IDs → FOR UPDATE
     │   ├── OrderAllocator.php                  # Orchestrates allocation for an order
     │   ├── OrderUnAllocator.php                # Releases reservations (cancel / recalculate)
+    │   ├── AllocationStrategyInterface.php      # Strategy contract: warehouseTiebreakerScore + compareLocations
+    │   ├── AllocationStrategies/
+    │   │   ├── FewestWarehousesStrategy.php     # More stock wins (WH) + largest location first
+    │   │   └── EmptyLocationsStrategy.php       # Less stock wins (WH) + smallest location first
     │   └── StockAllocator.php                  # Pure allocation algorithm, no infrastructure
     ├── Cancel/
     │   └── OrderCanceler.php                   # Validates, releases stock, queues recalculation
@@ -334,16 +337,18 @@ Whole-order:      W4(50+50) → remaining: Laptop=10, Mouse=10
 
 ### Allocation Strategy
 
-Set via `ALLOCATION_STRATEGY` in `.env`:
+Implemented via `AllocationStrategyInterface` with two concrete strategies wired through the Symfony container. Changing strategy requires only a `services.yaml` swap — no changes to `StockAllocator`.
 
-| Value | Tiebreaker | Best for |
-|---|---|---|
-| `fewest_warehouses` | More total stock wins | High order diversity, preserving optionality |
-| `empty_locations_first` | Less total stock wins | Draining sparse locations, consolidating stock |
+| Strategy class | Warehouse tiebreaker | Location order within warehouse | Best for |
+|---|---|---|---|
+| `FewestWarehousesStrategy` | More total stock wins | Largest first | High order diversity, preserving optionality |
+| `EmptyLocationsStrategy` | Less total stock wins | Smallest first | Draining sparse locations, consolidating stock over time |
+
+Both dimensions — warehouse selection and location ordering within the chosen warehouse — are controlled by the strategy, ensuring consistent behaviour throughout the allocation.
 
 ### Within a warehouse
 
-Locations are consumed **largest-available-first**, minimising the number of location rows used per warehouse.
+Location ordering is determined by the active strategy. `FewestWarehousesStrategy` consumes **largest-available-first** to minimise the number of location rows used. `EmptyLocationsStrategy` consumes **smallest-available-first** to drain sparse locations.
 
 ### Termination guarantee
 
@@ -416,5 +421,3 @@ PATCH /orders/{id}/cancelation
 - **Fully reserved, spanning more than one warehouse**, and contain at least one released product — freed stock may allow consolidation into fewer warehouses
 
 Orders containing none of the released products are excluded — the cancellation cannot affect their allocation.
-
-

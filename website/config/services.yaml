@@ -28,4 +28,4 @@ services:
     # please note that last definitions always *replace* previous ones
     App\Service\Order\Allocate\StockAllocator:
         arguments:
-            $strategy: '%env(ALLOCATION_STRATEGY)%'
+            $strategy: '@App\Service\Order\Allocate\AllocationStrategies\FewestWarehousesStrategy'

@@ -4,23 +4,20 @@ declare(strict_types=1);
 
 namespace App\Service\Order\Allocate;
 
-use App\Enum\AllocationStrategy;
+use App\Entity\WarehouseLocation;
 use App\ParametersObject\AllocationLinePo;
 use App\ParametersObject\AllocationResultPo;
 
 final class StockAllocator
 {
-    private AllocationStrategy $strategy;
-
-    public function __construct(string $strategy)
-    {
-        $this->strategy = AllocationStrategy::from($strategy);
+    public function __construct(
+        private readonly AllocationStrategyInterface $strategy,
+    ) {
     }
 
     /**
-     * @param array $locationsByWarehouse warehouseId -> productId -> WarehouseLocation[] (sorted by available DESC)
+     * @param array<int, array<int, WarehouseLocation[]>> $locationsByWarehouse warehouseId -> productId -> WarehouseLocation[]
      * @param array<int, int> $requestedQuantities productId -> quantityRequested
-     * @return AllocationResultPo
      */
     public function allocate(array $locationsByWarehouse, array $requestedQuantities): AllocationResultPo
     {
@@ -83,11 +80,10 @@ final class StockAllocator
     }
 
     /**
-     * @param array $locationsByProduct productId -> locations
+     * @param array<int, WarehouseLocation[]> $locationsByProduct productId -> locations
      * @param array<int, int> $warehouseIndex productId -> total available (mutable)
      * @param array<int, int> $locationIndex locationId -> available (mutable)
      * @param array<int, int> $remaining productId -> needed (mutable)
-     * @param AllocationResultPo $result
      */
     private function allocateFromWarehouse(
         array $locationsByProduct,
@@ -102,6 +98,7 @@ final class StockAllocator
             }
 
             $locations = $locationsByProduct[$productId] ?? [];
+            $this->strategy->sortLocations($locations, $locationIndex);
 
             foreach ($locations as $location) {
                 if ($needed <= 0) {
@@ -132,7 +129,7 @@ final class StockAllocator
     }
 
     /**
-     * @param array $locationsByWarehouse
+     * @param array<int, array<int, WarehouseLocation[]>> $locationsByWarehouse
      * @return array{array<int, array<int, int>>, array<int, int>}
      */
     private function buildAvailabilityIndexes(array $locationsByWarehouse): array
@@ -182,13 +179,11 @@ final class StockAllocator
      */
     private function isWarehouseExhaustedForRemaining(array $warehouseAvailable, array $remaining): bool
     {
-        foreach (array_keys($remaining) as $productId) {
-            if (($warehouseAvailable[$productId] ?? 0) > 0) {
-                return false;
-            }
-        }
+        return array_all(
+            array_keys($remaining),
+            static fn($productId) => ($warehouseAvailable[$productId] ?? 0) <= 0
+        );
 
-        return true;
     }
 
     /**
@@ -212,15 +207,10 @@ final class StockAllocator
             }
         }
 
-        $tiebreaker = match ($this->strategy) {
-            AllocationStrategy::FewestWarehouses => $totalAvailable,
-            AllocationStrategy::EmptyLocationsFirst => -$totalAvailable,
-        };
-
         return [
             'fullyCovers' => $fullyCovers,
             'contribution' => $contribution,
-            'tiebreaker' => $tiebreaker,
+            'tiebreaker' => $this->strategy->warehouseTiebreakerScore($totalAvailable),
         ];
     }
 }
