@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\OrderStatus;
+use App\Exception\DomainException;
 use App\Repository\OrderRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -49,9 +50,18 @@ class Order
         return $this->status;
     }
 
-    public function setStatus(OrderStatus $status): void
+    /**
+     * @param OrderStatus $newStatus
+     * @return void
+     * @throws DomainException
+     */
+    public function setStatus(OrderStatus $newStatus): void
     {
-        $this->status = $status;
+        if (isset($this->status)) {
+            $this->status->assertCanTransitionToAny($newStatus);
+        }
+
+        $this->status = $newStatus;
         $this->updatedAt = new DateTimeImmutable();
     }
 

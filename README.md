@@ -3,6 +3,18 @@
 A REST API built with **Symfony 8 / PHP 8.4 / MySQL / Doctrine ORM** that simulates reserving stock across multiple warehouses, each containing multiple physical locations.
 
 ---
+## Table of Contents
+
+- [Setup](#setup)
+- [Domain Overview](#domain-overview)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [API Endpoints](#api-endpoints)
+- [Allocation Algorithm](#allocation-algorithm)
+- [Concurrency Strategy](#concurrency-strategy)
+- [Async Processing](#async-processing)
+
+---
 
 ## Setup
 
@@ -35,7 +47,9 @@ su -s /bin/bash www-data
 #### [docker] Set up the project
 ```
 composer install \
+    && bin/console doctrine:database:create --if-not-exists \
     && bin/console doctrine:schema:drop --force \
+    && bin/console dbal:run-sql "DROP TABLE IF EXISTS doctrine_migration_versions" \
     && bin/console doctrine:migrations:migrate -n \
     && bin/console doctrine:fixtures:load -n \
     && bin/console messenger:setup-transports
@@ -59,22 +73,6 @@ bin/console doctrine:database:create --env=test \
 ```
 bin/phpunit --testdox --testsuite=All --group=OrderApi
 ```
-
----
----
-
-## Table of Contents
-
-- [Domain Overview](#domain-overview)
-- [Architecture](#architecture)
-- [Project Structure](#project-structure)
-- [API Endpoints](#api-endpoints)
-- [Allocation Algorithm](#allocation-algorithm)
-- [Concurrency Strategy](#concurrency-strategy)
-- [Async Processing](#async-processing)
-- [Setup](#setup)
-- [Running Tests](#running-tests)
-- [Known Issues & Design Decisions](#known-issues--design-decisions)
 
 ---
 
@@ -114,7 +112,7 @@ Service           → all business logic, organised by operation
 Repository        → all database queries, including locking strategy
 Entity            → domain objects with invariants enforced via exceptions
 DTO               → request/response shapes crossing the API boundary
-ParametersObject  → internal method parameter grouping (not DTOs)
+ParametersObject  → internal method parameter grouping
 Message           → async message definitions
 MessageHandler    → async message consumers
 ```
@@ -223,7 +221,7 @@ Creates an order and reserves stock.
 }
 ```
 
-**Response `200 OK`** (fully reserved):
+**Response `201 CREATED`** (fully reserved):
 ```json
 {
   "success": true,
@@ -232,7 +230,7 @@ Creates an order and reserves stock.
 }
 ```
 
-**Response `200 OK`** (partially reserved):
+**Response `201 CREATED`** (partially reserved):
 ```json
 {
   "success": true,
@@ -281,6 +279,7 @@ curl -X POST http://o_nginx/api/v1/orders \
 
 Ships a fully-reserved order. Decrements both `quantity` and `quantity_reserved` on each warehouse location.
 
+**Response `200 OK`**
 ```json
 { "success": true, "order": 42, "message": "Shipped" }
 ```
@@ -296,8 +295,22 @@ curl -X PATCH http://o_nginx/api/v1/orders/1/shipment
 
 Cancels a reserved or partially-reserved order. Releases `quantity_reserved` on affected locations and asynchronously triggers reallocation for orders containing the same products.
 
+**Response `200 OK`**
 ```json
 { "success": true, "order": 42, "message": "Canceled" }
+```
+
+**Response `422 UNPROCESSABLE CONTENT`**
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc7807",
+  "title": "DomainException",
+  "status": 422,
+  "detail": "Cannot transition order #6 from \"cancelled\" to cancelled. Allowed transitions: [].",
+  "errors": [
+    "Cannot transition order #6 from \"cancelled\" to cancelled. Allowed transitions: []."
+  ]
+}
 ```
 
 **[docker] Cancel order**
@@ -362,7 +375,7 @@ The loop terminates when either all products are satisfied or no remaining wareh
 
 All allocation, shipping, and cancellation run inside explicit database transactions with row-level locks acquired before any reads used for decision-making.
 
-**Lock acquisition order** — always `product_id ASC` — ensures concurrent transactions touching overlapping products lock rows in the same sequence, preventing circular waits (deadlocks).
+**Lock acquisition order** — `findAndLock` sorts all rows by `id ASC` before issuing `SELECT ... FOR UPDATE`. All concurrent transactions therefore acquire locks in the same global sequence regardless of which subset of locations they touch, preventing circular waits (deadlocks).
 
 **Two-step locking in `LockedProductLocationsProvider`:**
 

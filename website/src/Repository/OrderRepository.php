@@ -37,7 +37,7 @@ class OrderRepository extends ServiceEntityRepository
      * @param  int[] $releasedProductIds
      * @return Order[]
      */
-    public function findOrdersToRecalculate(array $releasedProductIds): array
+    public function findOrdersToRecalculate(Order $orderToExclude, array $releasedProductIds): array
     {
         $qb = $this->createQueryBuilder('o');
 
@@ -48,23 +48,19 @@ class OrderRepository extends ServiceEntityRepository
             ->join('oi2.reservations', 'r2')
             ->join('r2.warehouseLocation', 'wl2')
             ->andWhere('o2.status = :reservedStatus')
+            ->andWhere('o2.id != :orderToExcludeId')
             ->groupBy('o2.id')
             ->having('COUNT(DISTINCT wl2.warehouse) > 1')
             ->getDQL();
 
         $qb
+            ->distinct()
             ->join('o.orderItems', 'oi')
+            ->andWhere('o.id != :orderToExcludeId')
             ->andWhere('oi.product IN (:releasedProductIds)')
-            ->andWhere(
-                $qb->expr()->orX(
-                    'o.status = :partiallyReservedStatus',
-                    $qb->expr()->andX(
-                        'o.status = :reservedStatus',
-                        $qb->expr()->in('o.id', $multiWarehouseSubQuery)
-                    )
-                )
-            )
+            ->andWhere('o.status = :partiallyReservedStatus OR (o.status = :reservedStatus AND o.id IN (' . $multiWarehouseSubQuery . '))')
 
+            ->setParameter('orderToExcludeId', $orderToExclude->getId())
             ->setParameter('releasedProductIds', $releasedProductIds)
             ->setParameter('partiallyReservedStatus', OrderStatus::PartiallyReserved)
             ->setParameter('reservedStatus', OrderStatus::Reserved);

@@ -35,7 +35,10 @@ readonly class OrderAllocator
      */
     public function allocateAndReturnMissingItems(Order $order): array
     {
-        $this->validateOrder($order);
+        $order->getStatus()->assertCanTransitionToAny(
+            OrderStatus::Reserved,
+            OrderStatus::PartiallyReserved,
+        );
 
         $requestedQuantitiesPerProduct = $this->getRequestedQuantitiesPerProduct($order);
         $lockedLocationsByWarehouse = $this->getLockedProductLocations($requestedQuantitiesPerProduct);
@@ -50,7 +53,7 @@ readonly class OrderAllocator
 
     /**
      * @param array $quantityByProduct
-     * @return array<int, array<int, WarehouseLocation>>
+     * @return array<int, array<int, WarehouseLocation[]>>
      * @throws DatabaseException
      */
     private function getLockedProductLocations(array $quantityByProduct): array
@@ -132,6 +135,12 @@ readonly class OrderAllocator
         }
     }
 
+    /**
+     * @param array $missingItems
+     * @param Order $order
+     * @return void
+     * @throws DomainException
+     */
     private function updateOrderStatus(array $missingItems, Order $order): void
     {
         if (!empty($missingItems)) {
@@ -141,23 +150,5 @@ readonly class OrderAllocator
         }
 
         $order->setStatus(OrderStatus::Reserved);
-    }
-
-    /**
-     * @param Order $order
-     * @return void
-     * @throws DomainException
-     */
-    private function validateOrder(Order $order): void
-    {
-        if ($order->getStatus() === OrderStatus::Pending) {
-            return;
-        }
-
-        throw new DomainException(sprintf(
-            'Trying to allocate order #%d with invalid status %s',
-            $order->getId(),
-            $order->getStatus()->name,
-        ));
     }
 }

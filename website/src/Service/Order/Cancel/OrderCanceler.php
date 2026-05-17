@@ -36,7 +36,7 @@ class OrderCanceler
      */
     public function cancelOrder(Order $order): void
     {
-        $this->validate($order);
+        $order->getStatus()->assertOrderCanTransition($order->getId(), OrderStatus::Cancelled);
 
         $this->entityManager->wrapInTransaction(function () use ($order): void {
             $this->orderRepository->findAndLock($order->getId());
@@ -55,7 +55,7 @@ class OrderCanceler
 
             $order->setStatus(OrderStatus::Cancelled);
 
-            $ordersToRecalculate = $this->orderRepository->findOrdersToRecalculate($releasedProductIds);
+            $ordersToRecalculate = $this->orderRepository->findOrdersToRecalculate($order, $releasedProductIds);
             $this->queueRecalculations($ordersToRecalculate);
         });
     }
@@ -72,24 +72,6 @@ class OrderCanceler
         );
 
         return array_unique($releasedProductIds);
-    }
-
-    /**
-     * @param Order $order
-     * @return void
-     * @throws DomainException
-     */
-    private function validate(Order $order): void
-    {
-        if (in_array($order->getStatus(), [OrderStatus::Reserved, OrderStatus::PartiallyReserved], true)) {
-            return;
-        }
-
-        throw new DomainException(sprintf(
-            'Trying to cancel order #%d with invalid status %s',
-            $order->getId(),
-            $order->getStatus()->name
-        ));
     }
 
     /**

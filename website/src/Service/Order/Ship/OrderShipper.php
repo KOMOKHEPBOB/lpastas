@@ -31,7 +31,7 @@ class OrderShipper
      */
     public function shipOrder(Order $order): void
     {
-        $this->validate($order);
+        $order->getStatus()->assertOrderCanTransition($order->getId(), OrderStatus::Shipped);
 
         $this->entityManager->wrapInTransaction(function () use ($order): void {
             $this->orderRepository->findAndLock($order->getId());
@@ -48,23 +48,5 @@ class OrderShipper
 
             $order->setStatus(OrderStatus::Shipped);
         });
-    }
-
-    /**
-     * @param Order $order
-     * @return void
-     * @throws DomainException
-     */
-    private function validate(Order $order): void
-    {
-        if ($order->getStatus() !== OrderStatus::Reserved) {
-            return;
-        }
-
-        throw new DomainException(sprintf(
-            'Trying to ship order #%d with invalid status %s',
-            $order->getId(),
-            $order->getStatus()->name
-        ));
     }
 }

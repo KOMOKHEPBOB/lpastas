@@ -37,7 +37,7 @@ class CreateOrderController extends AbstractController
                 'order' => $result['order']->getId(),
                 'missing_items' => $result['missingItems'],
             ],
-            Response::HTTP_OK
+            Response::HTTP_CREATED
         );
     }
 }

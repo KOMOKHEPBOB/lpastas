@@ -29,7 +29,7 @@ readonly class OrderUnAllocator
      */
     public function unAllocateOrder(Order $order): void
     {
-        $this->validateOrder($order);
+        $order->setStatus(OrderStatus::Pending);
 
         $reservations = $this->orderItemReservationRepository->findOrderReservations($order);
         $locationIds = array_map(static fn ($reservation) => $reservation->getWarehouseLocation()->getId(), $reservations);
@@ -39,24 +39,6 @@ readonly class OrderUnAllocator
 
             $lockedLocations[$locationId]->releaseQuantityReserved($reservation->getQuantityReserved());
             $this->entityManager->remove($reservation);
-        }
-
-        $order->setStatus(OrderStatus::Pending);
-    }
-
-    /**
-     * @param Order $order
-     * @return void
-     * @throws DomainException
-     */
-    private function validateOrder(Order $order): void
-    {
-        if (!in_array($order->getStatus(), [OrderStatus::Reserved, OrderStatus::PartiallyReserved], true)) {
-            throw new DomainException(sprintf(
-                'Trying to allocate order #%d with invalid status %s',
-                $order->getId(),
-                $order->getStatus()->name,
-            ));
         }
     }
 }
