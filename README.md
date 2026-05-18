@@ -89,9 +89,9 @@ POST /orders
      │
      ▼
   reserved ──────────────────────────── PATCH /orders/{id}/shipment    ──► shipped
-     │
-     │ (insufficient stock)
-     ▼
+     │                       \
+     │ (insufficient stock)   \
+     ▼                         \
 partially_reserved ──────────────────── PATCH /orders/{id}/cancelation ──► cancelled
      │                                                                         │
      │ (stock freed by another cancellation,                                   │
